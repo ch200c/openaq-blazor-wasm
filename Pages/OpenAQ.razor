@@ -1,0 +1,76 @@
+﻿@page "/openaq"
+
+@using openaq_blazor_wasm.OpenAQ
+@using AspNetMonsters.Blazor.Geolocation
+@using Microsoft.Extensions.Logging
+
+@inject ILogger<OpenAQ> Logger
+
+@inject LocationService LocationService
+@inject HttpClient Http
+
+<h3>OpenAQ</h3>
+<div>
+    @($"Latitude: {location?.Latitude}") <br />
+    @($"Longitude: {location?.Longitude}") <br />
+    @($"Accuracy: {location?.Accuracy} meters") <br />
+</div>
+
+<div>
+    @if (closestResult == null)
+    {
+        <div>Failed to get a measurement<br /></div>
+    }
+    else
+    {
+        @($"Your closest measurement was located at {closestResult.Location}, {closestResult.City}.")<br />
+
+        foreach (var measurement in closestResult.Measurements)
+        {
+            @($"{measurement.Value} {measurement.Unit} of {UserFriendlyParamterName(measurement.Parameter)}. " +
+              $"Last updated at {measurement.LastUpdated}, average of {measurement.AveragingPeriod.Value} {measurement.AveragingPeriod.Unit}.")<br />
+        }
+    }
+</div>
+
+
+@code {
+
+    private int searchRadius;
+    private LatestResult closestResult;
+    private Location location;
+    protected async override Task OnInitializedAsync()
+    {
+        searchRadius = 100000;
+        location = await LocationService.GetLocationAsync();
+
+        if (location == null)
+        {
+            Logger.LogError("Failed to get location.");
+            return;
+        }
+
+        var uri = $"https://api.openaq.org/v1/latest?coordinates={location.Latitude},{location.Longitude}&radius={searchRadius}";
+        var response = await Http.GetJsonAsync<LatestResponse>(uri);
+
+        closestResult = response.Results.OrderBy(result => result.Distance).FirstOrDefault();
+        if (closestResult == null)
+        {
+            Logger.LogError("Failed to get results.");
+            return;
+        }
+    }
+
+    private string UserFriendlyParamterName(string parameter) =>
+      (parameter) switch
+      {
+          "pm25" => "Particles < 2.5µm (PM2.5)",
+          "pm10" => "Particles < 10µm (PM10)",
+          "so2" => "Sulphur Dioxide",
+          "no2" => "Nitrogen Dioxide",
+          "o3" => "Ozone",
+          "co" => "Carbon Monoxide",
+          "bc" => "Black Carbon",
+          _ => parameter,
+      };
+}
