@@ -1,3 +1,5 @@
+openaq-blazor-wasm
+
 MIT License
 
 Copyright (c) 2020 ch200c
@@ -21,7 +23,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 ----------------------------------------------------------------------------
-wwwroot/Location.js license:
+wwwroot/Location.js
 
 MIT License
 
